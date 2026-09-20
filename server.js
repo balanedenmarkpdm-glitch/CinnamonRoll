@@ -28,12 +28,12 @@ const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema(
   password: { type: String, required: true }
 }));
 
-let cached = global._mongo;
+let cached = null;
 async function db() {
+  if (mongoose.connection.readyState === 1) return;
   if (!cached) {
-    cached = global._mongo = mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 8000
-    });
+    cached = mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 8000 })
+      .catch(err => { cached = null; throw err; });
   }
   await cached;
 }
