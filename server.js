@@ -75,7 +75,7 @@ const User = mongoose.model("User", userSchema);
 
 app.get("/", (req, res) => {
 
-    res.sendFile(__dirname + "/home (1).html");
+    res.sendFile(__dirname + "/home.html");
 
 });
 
