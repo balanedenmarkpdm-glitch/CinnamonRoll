@@ -5,6 +5,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
+const MONGO_URI = process.env.MONGO_URI ||
+  'mongodb+srv://balanedenmarkpdm_db_user:NEW_PASSWORD@cluster0.ybe0qzn.mongodb.net/registerdb?appName=Cluster0';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -27,9 +30,8 @@ const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema(
 
 let cached = global._mongo;
 async function db() {
-  if (!process.env.MONGO_URI) throw new Error('MONGO_URI is not set');
   if (!cached) {
-    cached = global._mongo = mongoose.connect(process.env.MONGO_URI, {
+    cached = global._mongo = mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 8000
     });
   }
