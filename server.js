@@ -1,266 +1,82 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const path = require('path');
 
 const app = express();
-
-
-// ========================================
-// MIDDLEWARE
-// ========================================
-
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Serve HTML, CSS, JavaScript, and images
-app.use(express.static(__dirname));
+const PUBLIC = path.join(process.cwd(), 'public');
+app.use(express.static(PUBLIC));
 
+app.get('/', (req, res) => res.sendFile(path.join(PUBLIC, 'home.html')));
+app.get('/:page.html', (req, res) => {
+  res.sendFile(path.join(PUBLIC, req.params.page + '.html'), err => {
+    if (err) res.status(404).send('Page not found: ' + req.params.page + '.html');
+  });
+});
 
-// ========================================
-// MONGODB CONNECTION
-// ========================================
+const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true }
+}));
 
-// For Vercel, use the MONGODB_URI environment variable.
-// For local testing, you can put your working connection
-// string in a .env file.
-
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log("MongoDB connected");
-    })
-    .catch((error) => {
-        console.log("MongoDB connection error:", error);
+let cached = global._mongo;
+async function db() {
+  if (!process.env.MONGO_URI) throw new Error('MONGO_URI is not set');
+  if (!cached) {
+    cached = global._mongo = mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 8000
     });
+  }
+  await cached;
+}
 
+const register = async (req, res) => {
+  try {
+    await db();
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ message: 'Missing fields' });
+    if (await User.findOne({ username })) return res.status(400).json({ message: 'User exists' });
+    await User.create({ username, password: await bcrypt.hash(password, 10) });
+    res.json({ message: 'Registered' });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
 
-// ========================================
-// USER SCHEMA
-// ========================================
-
-const userSchema = new mongoose.Schema({
-
-    fullName: {
-        type: String,
-        required: true
-    },
-
-    username: {
-        type: String,
-        required: true
-    },
-
-    email: {
-        type: String,
-        required: true
-    },
-
-    password: {
-        type: String,
-        required: true
+const login = async (req, res) => {
+  try {
+    await db();
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Invalid username or password' });
     }
+    res.json({ message: 'Login success' });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
 
+app.post(['/api/register', '/register'], register);
+app.post(['/api/login', '/login'], login);
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await db();
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
-
-// ========================================
-// USER MODEL
-// ========================================
-
-const User = mongoose.model("User", userSchema);
-
-
-// ========================================
-// HOME PAGE
-// ========================================
-
-app.get("/", (req, res) => {
-
-    res.sendFile(__dirname + "/home.html");
-
-});
-
-
-// ========================================
-// REGISTER
-// ========================================
-
-app.post("/register", async (req, res) => {
-
-    try {
-
-        const {
-            fullName,
-            username,
-            email,
-            password
-        } = req.body;
-
-
-        // Check empty fields
-        if (
-            !fullName ||
-            !username ||
-            !email ||
-            !password
-        ) {
-
-            return res.status(400).json({
-                message: "Please fill in all fields."
-            });
-
-        }
-
-
-        // Check if username already exists
-        const usernameExists = await User.findOne({
-            username: username
-        });
-
-        if (usernameExists) {
-
-            return res.status(400).json({
-                message: "Username already exists."
-            });
-
-        }
-
-
-        // Check if email already exists
-        const emailExists = await User.findOne({
-            email: email
-        });
-
-        if (emailExists) {
-
-            return res.status(400).json({
-                message: "Email already exists."
-            });
-
-        }
-
-
-        // Create user
-        const newUser = new User({
-
-            fullName: fullName,
-            username: username,
-            email: email,
-            password: password
-
-        });
-
-
-        // Save user
-        await newUser.save();
-
-        console.log("New user registered:", username);
-
-
-        res.status(201).json({
-
-            message: "Registration successful!"
-
-        });
-
-
-    } catch (error) {
-
-        console.log("Registration error:", error);
-
-        res.status(500).json({
-
-            message: "Registration failed."
-
-        });
-
-    }
-
-});
-
-
-// ========================================
-// LOGIN
-// ========================================
-
-app.post("/login", async (req, res) => {
-
-    try {
-
-        const {
-            username,
-            password
-        } = req.body;
-
-
-        // Check empty fields
-        if (!username || !password) {
-
-            return res.status(400).json({
-
-                message: "Please enter your username and password."
-
-            });
-
-        }
-
-
-        // Find user
-        const user = await User.findOne({
-
-            username: username,
-            password: password
-
-        });
-
-
-        // User not found
-        if (!user) {
-
-            return res.status(401).json({
-
-                message: "Invalid username or password."
-
-            });
-
-        }
-
-
-        console.log("User logged in:", username);
-
-
-        res.status(200).json({
-
-            message: "Login successful!"
-
-        });
-
-
-    } catch (error) {
-
-        console.log("Login error:", error);
-
-        res.status(500).json({
-
-            message: "Login failed."
-
-        });
-
-    }
-
-});
-
-
-// ========================================
-// START SERVER
-// ========================================
-
-// Use Vercel's port when deployed,
-// otherwise use 3000 locally.
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-
-    console.log(`Server running on port ${PORT}`);
-
-});
+module.exports = app;
+
+if (require.main === module) {
+  app.listen(process.env.PORT || 3000, () => console.log('Running on http://localhost:3000'));
+}
