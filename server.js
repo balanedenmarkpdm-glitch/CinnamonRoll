@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 
 const MONGO_URI = process.env.MONGO_URI ||
-  'mongodb+srv://balanedenmarkpdm_db_user:NEW_PASSWORD@cluster0.ybe0qzn.mongodb.net/registerdb?appName=Cluster0';
+  'mongodb+srv://balanedenmarkpdm_db_user:balane440@cluster0.ybe0qzn.mongodb.net/registerdb?appName=Cluster0';
 
 const app = express();
 app.use(cors());
