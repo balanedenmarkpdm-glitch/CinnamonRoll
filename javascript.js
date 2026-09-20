@@ -18,14 +18,20 @@ if (document.title.trim() === "Register") {
 
             event.preventDefault();
 
-            console.log("Create Account button clicked.");
+            const fullName =
+                document.getElementById("fullName").value.trim();
 
-            // Get registration values
-            const fullName = document.getElementById("fullName").value.trim();
-            const username = document.getElementById("itxtbox").value.trim();
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("ipassbox").value;
-            const confirmPassword = document.getElementById("confirmPassword").value;
+            const username =
+                document.getElementById("itxtbox").value.trim();
+
+            const email =
+                document.getElementById("email").value.trim();
+
+            const password =
+                document.getElementById("ipassbox").value;
+
+            const confirmPassword =
+                document.getElementById("confirmPassword").value;
 
 
             // Check empty fields
@@ -43,7 +49,7 @@ if (document.title.trim() === "Register") {
             }
 
 
-            // Check password confirmation
+            // Check passwords
             if (password !== confirmPassword) {
 
                 alert("Passwords do not match!");
@@ -54,10 +60,7 @@ if (document.title.trim() === "Register") {
 
             try {
 
-                console.log("Sending registration data to server...");
-
-
-                const response = await fetch("http://localhost:3000/register", {
+                const response = await fetch("/register", {
 
                     method: "POST",
 
@@ -79,8 +82,6 @@ if (document.title.trim() === "Register") {
 
                 const data = await response.json();
 
-                console.log("Registration response:", data);
-
 
                 if (response.ok) {
 
@@ -88,12 +89,14 @@ if (document.title.trim() === "Register") {
 
                     registerForm.reset();
 
-                    // Go to Login
                     window.location.href = "index (1).html";
 
                 } else {
 
-                    alert(data.message || "Registration failed.");
+                    alert(
+                        data.message ||
+                        "Registration failed."
+                    );
 
                 }
 
@@ -127,15 +130,18 @@ if (document.title.trim() === "Login") {
 
             event.preventDefault();
 
-            console.log("Login button clicked.");
+            const username =
+                document.getElementById("itxtbox").value.trim();
 
-            // Get login values
-            const username = document.getElementById("itxtbox").value.trim();
-            const password = document.getElementById("ipassbox").value;
+            const password =
+                document.getElementById("ipassbox").value;
 
 
             // Check empty fields
-            if (username === "" || password === "") {
+            if (
+                username === "" ||
+                password === ""
+            ) {
 
                 alert("Please enter your username and password.");
                 return;
@@ -145,10 +151,7 @@ if (document.title.trim() === "Login") {
 
             try {
 
-                console.log("Checking login...");
-
-
-                const response = await fetch("http://localhost:3000/login", {
+                const response = await fetch("/login", {
 
                     method: "POST",
 
@@ -168,19 +171,19 @@ if (document.title.trim() === "Login") {
 
                 const data = await response.json();
 
-                console.log("Login response:", data);
-
 
                 if (response.ok) {
 
                     alert("Login successful!");
 
-                    // Go to Home
                     window.location.href = "home (1).html";
 
                 } else {
 
-                    alert(data.message || "Invalid username or password.");
+                    alert(
+                        data.message ||
+                        "Invalid username or password."
+                    );
 
                 }
 
@@ -214,18 +217,17 @@ if (document.title.trim() === "Forgot Password") {
 
             event.preventDefault();
 
-            console.log("Forgot password button clicked.");
 
+            const emailInput =
+                forgotForm.querySelector('input[type="email"]');
 
-            const emailInput = forgotForm.querySelector('input[type="email"]');
-
-            const email = emailInput.value.trim();
+            const email =
+                emailInput.value.trim();
 
 
             if (email === "") {
 
                 alert("Please enter your email.");
-
                 return;
 
             }
@@ -246,5 +248,4 @@ if (document.title.trim() === "Forgot Password") {
 // HOME
 // ========================================
 
-// The Home page currently does not need JavaScript.
-// Your menu links and navigation already work with HTML.
+// No JavaScript is currently required for Home.
