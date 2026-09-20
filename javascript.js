@@ -18,6 +18,7 @@ if (document.title.trim() === "Register") {
 
             event.preventDefault();
 
+            // Get values
             const fullName =
                 document.getElementById("fullName").value.trim();
 
@@ -60,6 +61,7 @@ if (document.title.trim() === "Register") {
 
             try {
 
+                // Send registration data to server
                 const response = await fetch("/register", {
 
                     method: "POST",
@@ -83,12 +85,14 @@ if (document.title.trim() === "Register") {
                 const data = await response.json();
 
 
+                // Registration successful
                 if (response.ok) {
 
                     alert("Account created successfully!");
 
                     registerForm.reset();
 
+                    // Go to Login
                     window.location.href = "index (1).html";
 
                 } else {
@@ -130,6 +134,7 @@ if (document.title.trim() === "Login") {
 
             event.preventDefault();
 
+            // Get values
             const username =
                 document.getElementById("itxtbox").value.trim();
 
@@ -151,6 +156,7 @@ if (document.title.trim() === "Login") {
 
             try {
 
+                // Send login data to server
                 const response = await fetch("/login", {
 
                     method: "POST",
@@ -172,10 +178,12 @@ if (document.title.trim() === "Login") {
                 const data = await response.json();
 
 
+                // Login successful
                 if (response.ok) {
 
                     alert("Login successful!");
 
+                    // Go to Home
                     window.location.href = "home (1).html";
 
                 } else {
@@ -225,6 +233,7 @@ if (document.title.trim() === "Forgot Password") {
                 emailInput.value.trim();
 
 
+            // Check empty email
             if (email === "") {
 
                 alert("Please enter your email.");
@@ -233,6 +242,7 @@ if (document.title.trim() === "Forgot Password") {
             }
 
 
+            // Current demo behavior
             alert("Reset link request submitted!");
 
             console.log("Email:", email);
@@ -248,4 +258,4 @@ if (document.title.trim() === "Forgot Password") {
 // HOME
 // ========================================
 
-// No JavaScript is currently required for Home.
+// No JavaScript is currently needed for Home.
