@@ -12,20 +12,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve HTML, CSS, JavaScript, and images
+app.use(express.static(__dirname));
+
 
 // ========================================
 // MONGODB CONNECTION
 // ========================================
 
-mongoose.connect(
-    "mongodb+srv://balanedenmarkpdm_db_user:balane440@cluster0.ybe0qzn.mongodb.net/registerdb?appName=Cluster0"
-)
-.then(() => {
-    console.log("MongoDB connected");
-})
-.catch((error) => {
-    console.log("MongoDB connection error:", error);
-});
+// For Vercel, use the MONGODB_URI environment variable.
+// For local testing, you can put your working connection
+// string in a .env file.
+
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        console.log("MongoDB connected");
+    })
+    .catch((error) => {
+        console.log("MongoDB connection error:", error);
+    });
 
 
 // ========================================
@@ -65,6 +70,17 @@ const User = mongoose.model("User", userSchema);
 
 
 // ========================================
+// HOME PAGE
+// ========================================
+
+app.get("/", (req, res) => {
+
+    res.sendFile(__dirname + "/home (1).html");
+
+});
+
+
+// ========================================
 // REGISTER
 // ========================================
 
@@ -95,7 +111,7 @@ app.post("/register", async (req, res) => {
         }
 
 
-        // Check username
+        // Check if username already exists
         const usernameExists = await User.findOne({
             username: username
         });
@@ -109,7 +125,7 @@ app.post("/register", async (req, res) => {
         }
 
 
-        // Check email
+        // Check if email already exists
         const emailExists = await User.findOne({
             email: email
         });
@@ -123,7 +139,7 @@ app.post("/register", async (req, res) => {
         }
 
 
-        // Create new user
+        // Create user
         const newUser = new User({
 
             fullName: fullName,
@@ -134,14 +150,16 @@ app.post("/register", async (req, res) => {
         });
 
 
-        // Save to MongoDB
+        // Save user
         await newUser.save();
 
         console.log("New user registered:", username);
 
 
         res.status(201).json({
+
             message: "Registration successful!"
+
         });
 
 
@@ -150,7 +168,9 @@ app.post("/register", async (req, res) => {
         console.log("Registration error:", error);
 
         res.status(500).json({
+
             message: "Registration failed."
+
         });
 
     }
@@ -176,24 +196,30 @@ app.post("/login", async (req, res) => {
         if (!username || !password) {
 
             return res.status(400).json({
+
                 message: "Please enter your username and password."
+
             });
 
         }
 
 
-        // Find matching user
+        // Find user
         const user = await User.findOne({
+
             username: username,
             password: password
+
         });
 
 
-        // Invalid login
+        // User not found
         if (!user) {
 
             return res.status(401).json({
+
                 message: "Invalid username or password."
+
             });
 
         }
@@ -203,7 +229,9 @@ app.post("/login", async (req, res) => {
 
 
         res.status(200).json({
+
             message: "Login successful!"
+
         });
 
 
@@ -212,7 +240,9 @@ app.post("/login", async (req, res) => {
         console.log("Login error:", error);
 
         res.status(500).json({
+
             message: "Login failed."
+
         });
 
     }
@@ -221,22 +251,16 @@ app.post("/login", async (req, res) => {
 
 
 // ========================================
-// TEST SERVER
-// ========================================
-
-app.get("/", (req, res) => {
-
-    res.send("Cinnamoroll Bakery server is running!");
-
-});
-
-
-// ========================================
 // START SERVER
 // ========================================
 
-app.listen(3000, () => {
+// Use Vercel's port when deployed,
+// otherwise use 3000 locally.
 
-    console.log("Server running at http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+
+    console.log(`Server running on port ${PORT}`);
 
 });
