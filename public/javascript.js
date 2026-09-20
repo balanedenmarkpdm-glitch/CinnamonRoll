@@ -93,7 +93,7 @@ if (document.title.trim() === "Register") {
                     registerForm.reset();
 
                     // Go to Login
-                    window.location.href = "index (1).html";
+                    window.location.href = "index.html";
 
                 } else {
 
@@ -184,7 +184,7 @@ if (document.title.trim() === "Login") {
                     alert("Login successful!");
 
                     // Go to Home
-                    window.location.href = "home (1).html";
+                    window.location.href = "home.html";
 
                 } else {
 
