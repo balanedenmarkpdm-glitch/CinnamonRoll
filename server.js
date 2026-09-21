@@ -717,141 +717,54 @@ async function verifyResetCode(req, res) {
 // RESET PASSWORD
 // ========================================
 
-async function resetPassword(
-    req,
-    res
-) {
-
+async function resetPassword(req, res) {
     try {
-
         await db();
 
+        const { resetToken, newPassword } = req.body;
 
-        const {
-            resetToken,
-            password
-        } = req.body || {};
-
-
-        // ====================================
-        // CHECK REQUIRED DATA
-        // ====================================
-
-        if (
-            !resetToken ||
-            !password
-        ) {
-
+        if (!resetToken || !newPassword) {
             return res.status(400).json({
-                message:
-                    "Reset information is incomplete."
+                ok: false,
+                error: "Reset token and new password are required."
             });
-
         }
 
+        const tokenHash = hashValue(resetToken);
 
-        // ====================================
-        // PASSWORD LENGTH
-        // ====================================
-
-        if (
-            String(password).length < 6
-        ) {
-
-            return res.status(400).json({
-                message:
-                    "Password must be at least 6 characters."
-            });
-
-        }
-
-
-        // ====================================
-        // HASH TOKEN
-        // ====================================
-
-        const tokenHash =
-            hashValue(
-                String(resetToken)
-            );
-
-
-        // ====================================
-        // FIND VALID TOKEN
-        // ====================================
-
-        const user =
-            await User.findOne({
-
-                resetTokenHash:
-                    tokenHash,
-
-                resetTokenExpires:
-                    {
-                        $gt:
-                            new Date()
-                    }
-
-            });
-
+        const user = await User.findOne({
+            resetTokenHash: tokenHash,
+            resetTokenExpires: { $gt: new Date() }
+        });
 
         if (!user) {
-
             return res.status(400).json({
-                message:
-                    "Password reset link is invalid or expired."
+                ok: false,
+                error: "Reset session is invalid or expired."
             });
-
         }
 
+        user.password = await bcrypt.hash(newPassword, 10);
 
-        // ====================================
-        // CHANGE PASSWORD
-        // ====================================
-
-        user.password =
-            await bcrypt.hash(
-                String(password),
-                10
-            );
-
-
-        // ====================================
-        // INVALIDATE RESET TOKEN
-        // ====================================
-
-        user.resetTokenHash =
-            null;
-
-        user.resetTokenExpires =
-            null;
-
+        user.resetTokenHash = undefined;
+        user.resetTokenExpires = undefined;
 
         await user.save();
 
-
-        return res.json({
-            message:
-                "Password changed successfully."
+        res.json({
+            ok: true,
+            message: "Password changed successfully."
         });
-
 
     } catch (error) {
+        console.error("Reset password error:", error);
 
-        console.error(
-            "Reset password error:",
-            error
-        );
-
-
-        return res.status(500).json({
-            message:
-                "Unable to change password."
+        res.status(500).json({
+            ok: false,
+            error: "Failed to reset password."
         });
-
     }
 }
-
 
 // ========================================
 // ROUTES
@@ -860,54 +773,14 @@ async function resetPassword(
 
 // REGISTER
 
-app.post(
-    "/register",
-    register
-);
+app.post("/forgot-password", forgotPassword);
+app.post("/api/forgot-password", forgotPassword);
 
-app.post(
-    "/api/register",
-    register
-);
+app.post("/verify-reset-code", verifyResetCode);
+app.post("/api/verify-reset-code", verifyResetCode);
 
-
-// LOGIN
-
-app.post(
-    "/login",
-    login
-);
-
-app.post(
-    "/api/login",
-    login
-);
-
-
-// FORGOT PASSWORD
-
-app.post(
-    "/forgot-password",
-    forgotPassword
-);
-
-app.post(
-    "/api/forgot-password",
-    forgotPassword
-);
-
-
-// RESET PASSWORD
-
-app.post(
-    "/reset-password",
-    resetPassword
-);
-
-app.post(
-    "/api/reset-password",
-    resetPassword
-);
+app.post("/reset-password", resetPassword);
+app.post("/api/reset-password", resetPassword);
 
 
 // ========================================
