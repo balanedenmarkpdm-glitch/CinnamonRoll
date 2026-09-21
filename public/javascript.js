@@ -215,53 +215,57 @@ if (document.title.trim() === "Forgot Password") {
         });
     }
 
-    if (resetForm) {
-        resetForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
+    const resetForm = document.getElementById("resetForm");
 
-            const newPassword = newPasswordInput.value;
-            const confirmPassword = confirmNewPasswordInput.value;
+if (resetForm) {
+    resetForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-            if (!newPassword || !confirmPassword) {
-                alert("Please fill in both password fields.");
+        const newPassword =
+            document.getElementById("newPassword").value;
+
+        const confirmPassword =
+            document.getElementById("confirmNewPassword").value;
+
+        if (newPassword !== confirmPassword) {
+            alert("Passwords do not match.");
+            return;
+        }
+
+        if (!resetToken) {
+            alert("Please verify the code first.");
+            return;
+        }
+
+        try {
+            const response = await fetch("/reset-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    resetToken: resetToken,
+                    newPassword: newPassword
+                })
+            });
+
+            const data = await response.json();
+
+            console.log("Reset password response:", data);
+
+            if (!data.ok) {
+                alert(data.error);
                 return;
             }
 
-            if (newPassword !== confirmPassword) {
-                alert("Passwords do not match!");
-                return;
-            }
+            alert("Password changed successfully!");
 
-            if (newPassword.length < 6) {
-                alert("Password must be at least 6 characters.");
-                return;
-            }
+            window.location.href = "index.html";
 
-            if (!resetToken) {
-                alert("Your reset session is invalid. Please start again.");
-                return;
-            }
-
-            try {
-                const response = await fetch("/reset-password", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ resetToken, password: newPassword })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    localStorage.removeItem("cinnamorollRememberMe");
-                    alert("Password changed successfully!");
-                    window.location.href = "index.html";
-                } else {
-                    alert(data.message || "Unable to change password.");
-                }
-            } catch (error) {
-                console.error("Reset password error:", error);
-                alert("Cannot connect to the server.");
-            }
-        });
-    }
+        } catch (error) {
+            console.error("Reset password error:", error);
+            alert("Unable to change password.");
+        }
+    });
+}
 }
