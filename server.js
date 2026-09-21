@@ -134,51 +134,72 @@ async function db() {
 // USER SCHEMA
 // ========================================
 
-const userSchema =
-    new mongoose.Schema({
 
-        fullName: {
-            type: String,
-            required: false,
-            trim: true
-        },
+const userSchema = new mongoose.Schema({
 
-        username: {
-            type: String,
-            required: true,
-            unique: true,
-            trim: true
-        },
+    fullName: {
+        type: String,
+        required: false,
+        trim: true
+    },
 
-        email: {
-            type: String,
-            required: false,
-            unique: true,
-            sparse: true,
-            lowercase: true,
-            trim: true
-        },
+    username: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true
+    },
 
-        password: {
-            type: String,
-            required: true
-        },
+    email: {
+        type: String,
+        required: false,
+        unique: true,
+        sparse: true,
+        lowercase: true,
+        trim: true
+    },
 
-        // ====================================
-        // PASSWORD RESET
-        // ====================================
+    password: {
+        type: String,
+        required: true
+    },
 
-        resetTokenHash: {
-            type: String,
-            default: null
-        },
+    // ====================================
+    // PASSWORD RESET - VERIFICATION CODE
+    // ====================================
 
-        resetTokenExpires: {
-            type: Date,
-            default: null
-        }
+    resetCodeHash: {
+        type: String,
+        default: null
+    },
 
-    });
+    resetCodeExpires: {
+        type: Date,
+        default: null
+    },
+
+    resetCodeAttempts: {
+        type: Number,
+        default: 0
+    },
+
+    // ====================================
+    // PASSWORD RESET - RESET TOKEN
+    // ====================================
+
+    resetTokenHash: {
+        type: String,
+        default: null
+    },
+
+    resetTokenExpires: {
+        type: Date,
+        default: null
+    }
+
+});
+
+    
 
 
 // ========================================
@@ -772,6 +793,12 @@ async function resetPassword(req, res) {
 
 
 // REGISTER
+
+app.post("/register", register);
+app.post("/api/register", register);
+
+app.post("/login", login);
+app.post("/api/login", login);
 
 app.post("/forgot-password", forgotPassword);
 app.post("/api/forgot-password", forgotPassword);
