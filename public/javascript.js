@@ -215,7 +215,7 @@ if (document.title.trim() === "Forgot Password") {
         });
     }
 
-    const resetForm = document.getElementById("resetForm");
+
 
 if (resetForm) {
     resetForm.addEventListener("submit", async (e) => {
