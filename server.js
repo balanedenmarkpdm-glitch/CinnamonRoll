@@ -1460,12 +1460,11 @@ if (require.main === module) {
         })
         .catch(error => {
 
-            console.error("");
-            console.error("================================");
-            console.error("MONGODB CONNECTION FAILED");
-            console.error("================================");
+            console.error(
+                "MONGODB CONNECTION FAILED"
+            );
+
             console.error(error.message);
-            console.error("");
 
             process.exit(1);
         });
