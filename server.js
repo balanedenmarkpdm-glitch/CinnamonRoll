@@ -33,7 +33,7 @@ const EMAIL_APP_PASSWORD =
 // Do not publish this credential on GitHub.
 
 const MONGO_URI =
-    process.env.MONGO_URI;
+    "mongodb+srv://balanedenmark.pdm:balane440@YOUR_CLUSTER.mongodb.net/CinnamonRoll?retryWrites=true&w=majority";
 
 
 // ========================================
