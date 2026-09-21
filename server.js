@@ -11,28 +11,30 @@ const path = require("path");
 // EMAIL CREDENTIALS
 // ========================================
 
-// Put the Gmail address that will SEND the code here.
-
 const EMAIL_USER =
-    "yourgmail@gmail.com";
-
-
-// Put your Google App Password here.
-// NOT your normal Gmail password.
+    "balanedenmark.pdm@gmail.com";
 
 const EMAIL_APP_PASSWORD =
-    "YOUR_16_CHARACTER_APP_PASSWORD";
+    "spajubrkmodovknd";
 
 
 // ========================================
+// APPLICATION URL
+// ========================================
+
+const APP_URL =
+    "http://localhost:3000";
 
 
 // ========================================
 // MONGODB
 // ========================================
 
-const MONGO_USER = "balanedenmarkpdm_db_user";
-const MONGO_PASSWORD = "balane440";
+const MONGO_USER =
+    "balanedenmarkpdm_db_user";
+
+const MONGO_PASSWORD =
+    "balane440";
 
 const MONGO_URI =
     `mongodb+srv://${encodeURIComponent(MONGO_USER)}:${encodeURIComponent(MONGO_PASSWORD)}@cluster0.ybe0qzn.mongodb.net/CinnamonRoll?retryWrites=true&w=majority&appName=Cluster0`;
@@ -46,15 +48,17 @@ const app =
     express();
 
 
+// ========================================
+// MIDDLEWARE
+// ========================================
+
 app.use(
     cors()
 );
 
-
 app.use(
     express.json()
 );
-
 
 app.use(
     express.urlencoded({
@@ -73,7 +77,6 @@ const PUBLIC =
         "public"
     );
 
-
 app.use(
     express.static(PUBLIC)
 );
@@ -84,26 +87,47 @@ app.use(
 // ========================================
 
 async function db() {
+
     try {
-        if (mongoose.connection.readyState === 1) {
+
+        if (
+            mongoose.connection.readyState === 1
+        ) {
             return;
         }
 
-        console.log("Connecting to MongoDB...");
+        console.log(
+            "Connecting to MongoDB..."
+        );
 
-        await mongoose.connect(MONGO_URI, {
-            serverSelectionTimeoutMS: 8000
-        });
+        await mongoose.connect(
+            MONGO_URI,
+            {
+                serverSelectionTimeoutMS: 8000
+            }
+        );
 
-        console.log("MongoDB connected successfully!");
+        console.log(
+            "MongoDB connected successfully!"
+        );
+
     } catch (error) {
-        console.error("========== MONGODB ERROR ==========");
-        console.error(error.message);
-        console.error("===================================");
+
+        console.error(
+            "========== MONGODB ERROR =========="
+        );
+
+        console.error(
+            error.message
+        );
+
+        console.error(
+            "==================================="
+        );
+
         throw error;
     }
 }
-
 
 
 // ========================================
@@ -114,107 +138,52 @@ const userSchema =
     new mongoose.Schema({
 
         fullName: {
-
             type: String,
-
             required: false,
-
             trim: true
-
         },
-
 
         username: {
-
             type: String,
-
             required: true,
-
             unique: true,
-
             trim: true
-
         },
-
 
         email: {
-
             type: String,
-
             required: false,
-
             unique: true,
-
             sparse: true,
-
             lowercase: true,
-
             trim: true
-
         },
-
 
         password: {
-
             type: String,
-
             required: true
-
         },
-
 
         // ====================================
-        // PASSWORD RESET DATA
+        // PASSWORD RESET
         // ====================================
-
-        resetCodeHash: {
-
-            type: String,
-
-            default: null
-
-        },
-
-
-        resetCodeExpires: {
-
-            type: Date,
-
-            default: null
-
-        },
-
-
-        resetCodeAttempts: {
-
-            type: Number,
-
-            default: 0
-
-        },
-
 
         resetTokenHash: {
-
             type: String,
-
             default: null
-
         },
 
-
         resetTokenExpires: {
-
             type: Date,
-
             default: null
-
         }
 
     });
 
 
-// Reuse model if it already exists
+// ========================================
+// USER MODEL
+// ========================================
 
 const User =
     mongoose.models.User ||
@@ -247,23 +216,7 @@ const transporter =
 
 
 // ========================================
-// CODE GENERATOR
-// ========================================
-
-function generateVerificationCode() {
-
-    return crypto
-        .randomInt(
-            100000,
-            1000000
-        )
-        .toString();
-
-}
-
-
-// ========================================
-// TOKEN GENERATOR
+// RESET TOKEN GENERATOR
 // ========================================
 
 function generateResetToken() {
@@ -289,7 +242,6 @@ function hashValue(value) {
 }
 
 
-
 // ========================================
 // REGISTER
 // ========================================
@@ -309,10 +261,12 @@ async function register(
             username,
             email,
             password
-        } = req.body;
+        } = req.body || {};
 
 
-        // Check required fields
+        // ====================================
+        // REQUIRED FIELDS
+        // ====================================
 
         if (
             !fullName ||
@@ -321,43 +275,37 @@ async function register(
             !password
         ) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Please fill in all fields."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Please fill in all fields."
+            });
 
         }
 
 
-        // Check password length
+        // ====================================
+        // PASSWORD LENGTH
+        // ====================================
 
         if (
-            password.length < 6
+            String(password).length < 6
         ) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Password must be at least 6 characters."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Password must be at least 6 characters."
+            });
 
         }
 
 
         const cleanUsername =
-            username
+            String(username)
                 .trim();
 
 
         const cleanEmail =
-            email
+            String(email)
                 .trim()
                 .toLowerCase();
 
@@ -368,23 +316,17 @@ async function register(
 
         const existingUsername =
             await User.findOne({
-
                 username:
                     cleanUsername
-
             });
 
 
         if (existingUsername) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Username already exists."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Username already exists."
+            });
 
         }
 
@@ -395,23 +337,17 @@ async function register(
 
         const existingEmail =
             await User.findOne({
-
                 email:
                     cleanEmail
-
             });
 
 
         if (existingEmail) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Email is already registered."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Email is already registered."
+            });
 
         }
 
@@ -422,7 +358,7 @@ async function register(
 
         const hashedPassword =
             await bcrypt.hash(
-                password,
+                String(password),
                 10
             );
 
@@ -434,7 +370,7 @@ async function register(
         await User.create({
 
             fullName:
-                fullName.trim(),
+                String(fullName).trim(),
 
             username:
                 cleanUsername,
@@ -448,32 +384,26 @@ async function register(
         });
 
 
-        res.json({
-
+        return res.json({
             message:
                 "Registered successfully."
-
         });
 
 
     } catch (error) {
 
-console.error("Registration error:");
-console.error(error);
+        console.error(
+            "Registration error:",
+            error
+        );
 
-        res
-            .status(500)
-            .json({
-
-                message:
-                    "Server error during registration."
-
-            });
+        return res.status(500).json({
+            message:
+                "Server error during registration."
+        });
 
     }
-
 }
-
 
 
 // ========================================
@@ -487,13 +417,18 @@ async function login(
 
     try {
 
+        console.log(
+            "LOGIN REQUEST RECEIVED"
+        );
+
+
         await db();
 
 
         const {
             username,
             password
-        } = req.body;
+        } = req.body || {};
 
 
         if (
@@ -501,104 +436,127 @@ async function login(
             !password
         ) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Username and password are required."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Username and password are required."
+            });
 
         }
 
 
         const cleanUsername =
-            username
-                .trim();
+            String(username).trim();
 
 
         const user =
             await User.findOne({
-
                 username:
                     cleanUsername
-
             });
+
+
+        console.log(
+            "User found:",
+            user ? "YES" : "NO"
+        );
 
 
         if (!user) {
 
-            return res
-                .status(401)
-                .json({
-
-                    message:
-                        "Invalid username or password."
-
-                });
+            return res.status(401).json({
+                message:
+                    "Invalid username or password."
+            });
 
         }
 
 
+        // ====================================
+        // CHECK PASSWORD FIELD
+        // ====================================
+
+        if (
+            !user.password ||
+            typeof user.password !== "string"
+        ) {
+
+            console.error(
+                "User has no valid password."
+            );
+
+            return res.status(500).json({
+                message:
+                    "This account has an invalid password record. Please register again."
+            });
+
+        }
+
+
+        // ====================================
+        // CHECK PASSWORD
+        // ====================================
+
         const passwordCorrect =
             await bcrypt.compare(
-
-                password,
-
+                String(password),
                 user.password
-
             );
+
+
+        console.log(
+            "Password correct:",
+            passwordCorrect
+        );
 
 
         if (!passwordCorrect) {
 
-            return res
-                .status(401)
-                .json({
-
-                    message:
-                        "Invalid username or password."
-
-                });
+            return res.status(401).json({
+                message:
+                    "Invalid username or password."
+            });
 
         }
 
 
-        res.json({
+        console.log(
+            "LOGIN SUCCESS"
+        );
 
+
+        return res.json({
             message:
                 "Login success"
-
         });
 
 
     } catch (error) {
 
         console.error(
-            "Login error:",
+            "========== LOGIN ERROR =========="
+        );
+
+        console.error(
             error
         );
 
+        console.error(
+            "================================="
+        );
 
-        res
-            .status(500)
-            .json({
 
-                message:
-                    "Server error during login."
-
-                });
+        return res.status(500).json({
+            message:
+                "Server error during login."
+        });
 
     }
-
 }
-
 
 
 // ========================================
 // FORGOT PASSWORD
-// SEND CODE
+// SEND RESET LINK
 // ========================================
 
 async function forgotPassword(
@@ -619,40 +577,35 @@ async function forgotPassword(
             .toLowerCase();
 
 
+        // ====================================
+        // REQUIRED EMAIL
+        // ====================================
+
         if (!email) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Email is required."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Email is required."
+            });
 
         }
 
 
         // ====================================
-        // CHECK EMAIL SETTINGS
+        // CHECK GMAIL SETTINGS
         // ====================================
 
         if (
             EMAIL_USER ===
-            "yourgmail@gmail.com" ||
-
+                "YOUR_GMAIL@gmail.com" ||
             EMAIL_APP_PASSWORD ===
-            "YOUR_16_CHARACTER_APP_PASSWORD"
+                "YOUR_16_CHARACTER_APP_PASSWORD"
         ) {
 
-            return res
-                .status(500)
-                .json({
-
-                    message:
-                        "Please configure your Gmail credentials in server.js."
-
-                });
+            return res.status(500).json({
+                message:
+                    "Please configure your Gmail credentials in server.js."
+            });
 
         }
 
@@ -663,71 +616,59 @@ async function forgotPassword(
 
         const user =
             await User.findOne({
-
                 email:
                     email
-
             });
 
 
         /*
-         * We use a generic response for an
-         * unknown email instead of revealing
-         * whether the account exists.
+         * Don't reveal whether the account exists.
          */
 
         if (!user) {
 
             return res.json({
-
                 message:
-                    "If an account with that email exists, a verification code has been sent."
-
+                    "If an account with that email exists, a password reset link has been sent."
             });
 
         }
 
 
         // ====================================
-        // GENERATE CODE
+        // GENERATE RESET TOKEN
         // ====================================
 
-        const code =
-            generateVerificationCode();
+        const resetToken =
+            generateResetToken();
 
 
         // ====================================
-        // SAVE HASHED CODE
+        // SAVE ONLY TOKEN HASH
         // ====================================
 
-        user.resetCodeHash =
-            hashValue(code);
-
-
-        user.resetCodeExpires =
-            new Date(
-
-                Date.now() +
-                10 * 60 * 1000
-
+        user.resetTokenHash =
+            hashValue(
+                resetToken
             );
 
 
-        user.resetCodeAttempts =
-            0;
-
-
-        // Clear previous token
-
-        user.resetTokenHash =
-            null;
-
-
         user.resetTokenExpires =
-            null;
+            new Date(
+                Date.now() +
+                15 * 60 * 1000
+            );
 
 
         await user.save();
+
+
+        // ====================================
+        // CREATE RESET URL
+        // ====================================
+
+        const resetUrl =
+            `${APP_URL}/reset-password.html?token=${encodeURIComponent(resetToken)}`;
 
 
         // ====================================
@@ -745,20 +686,28 @@ async function forgotPassword(
                     user.email,
 
                 subject:
-                    "CINNAMOROLL BAKERY SHOP - Password Reset Code",
+                    "CINNAMOROLL BAKERY SHOP - Reset Your Password",
 
                 text:
-                    `Your CINNAMOROLL BAKERY SHOP password reset verification code is ${code}. This code expires in 10 minutes.`,
+                    `We received a request to reset your password.
+
+Click the link below to reset your password:
+
+${resetUrl}
+
+This link expires in 15 minutes.
+
+If you did not request a password reset, you can ignore this email.`,
 
                 html: `
-
                     <div style="
                         font-family: Arial, sans-serif;
-                        max-width: 500px;
+                        max-width: 520px;
                         margin: 20px auto;
-                        padding: 25px;
+                        padding: 30px;
                         border: 1px solid #ddd;
                         border-radius: 12px;
+                        line-height: 1.6;
                     ">
 
                         <h2>
@@ -766,39 +715,48 @@ async function forgotPassword(
                         </h2>
 
                         <p>
-                            We received a request to
-                            reset your password.
+                            We received a request to reset
+                            your password.
                         </p>
 
                         <p>
-                            Your verification code is:
+                            Click the button below to create
+                            a new password.
                         </p>
 
                         <div style="
                             text-align: center;
-                            font-size: 32px;
-                            font-weight: bold;
-                            letter-spacing: 8px;
-                            margin: 25px 0;
+                            margin: 30px 0;
                         ">
 
-                            ${code}
+                            <a
+                                href="${resetUrl}"
+                                style="
+                                    display: inline-block;
+                                    padding: 12px 24px;
+                                    background: #333;
+                                    color: #fff;
+                                    text-decoration: none;
+                                    border-radius: 8px;
+                                    font-weight: bold;
+                                "
+                            >
+                                Reset Password
+                            </a>
 
                         </div>
 
                         <p>
-                            This code expires in
-                            <strong>10 minutes</strong>.
+                            This link expires in
+                            <strong>15 minutes</strong>.
                         </p>
 
                         <p>
-                            If you did not request a
-                            password reset, you can ignore
-                            this email.
+                            If you did not request this,
+                            you can ignore this email.
                         </p>
 
                     </div>
-
                 `
 
             });
@@ -806,17 +764,13 @@ async function forgotPassword(
 
         } catch (emailError) {
 
-            // Remove unusable reset code
-            // if email could not be sent.
+            // Invalidate token if email fails
 
-            user.resetCodeHash =
+            user.resetTokenHash =
                 null;
 
-            user.resetCodeExpires =
+            user.resetTokenExpires =
                 null;
-
-            user.resetCodeAttempts =
-                0;
 
             await user.save();
 
@@ -827,23 +781,17 @@ async function forgotPassword(
             );
 
 
-            return res
-                .status(500)
-                .json({
-
-                    message:
-                        "Unable to send verification email. Check your Gmail settings."
-
-                });
+            return res.status(500).json({
+                message:
+                    "Unable to send password reset email. Check your Gmail settings."
+            });
 
         }
 
 
-        res.json({
-
+        return res.json({
             message:
-                "Verification code sent."
-
+                "Password reset link has been sent to your email."
         });
 
 
@@ -855,260 +803,13 @@ async function forgotPassword(
         );
 
 
-        res
-            .status(500)
-            .json({
-
-                message:
-                    "Unable to send verification code."
-
-                });
-
-    }
-
-}
-
-
-
-// ========================================
-// VERIFY RESET CODE
-// ========================================
-
-async function verifyResetCode(
-    req,
-    res
-) {
-
-    try {
-
-        await db();
-
-
-        const email =
-            String(
-                req.body.email || ""
-            )
-            .trim()
-            .toLowerCase();
-
-
-        const code =
-            String(
-                req.body.code || ""
-            )
-            .trim();
-
-
-        if (
-            !email ||
-            !code
-        ) {
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Email and verification code are required."
-
-                });
-
-        }
-
-
-        // ====================================
-        // FIND USER
-        // ====================================
-
-        const user =
-            await User.findOne({
-
-                email:
-                    email
-
-            });
-
-
-        if (!user) {
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Invalid verification code."
-
-                });
-
-        }
-
-
-        // ====================================
-        // CHECK CODE EXISTS
-        // ====================================
-
-        if (
-            !user.resetCodeHash ||
-            !user.resetCodeExpires
-        ) {
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Verification code is invalid or expired."
-
-                });
-
-        }
-
-
-        // ====================================
-        // CHECK ATTEMPTS
-        // ====================================
-
-        if (
-            user.resetCodeAttempts >= 5
-        ) {
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Too many incorrect attempts. Request a new code."
-
-                });
-
-        }
-
-
-        // ====================================
-        // CHECK EXPIRATION
-        // ====================================
-
-        if (
-            Date.now() >
-            user.resetCodeExpires.getTime()
-        ) {
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Verification code has expired."
-
-                });
-
-        }
-
-
-        // ====================================
-        // COMPARE CODE
-        // ====================================
-
-        const suppliedHash =
-            hashValue(code);
-
-
-        if (
-            suppliedHash !==
-            user.resetCodeHash
-        ) {
-
-            user.resetCodeAttempts += 1;
-
-            await user.save();
-
-
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Invalid verification code."
-
-                });
-
-        }
-
-
-        // ====================================
-        // CREATE RESET TOKEN
-        // ====================================
-
-        const resetToken =
-            generateResetToken();
-
-
-        user.resetTokenHash =
-            hashValue(
-                resetToken
-            );
-
-
-        user.resetTokenExpires =
-            new Date(
-
-                Date.now() +
-                15 * 60 * 1000
-
-            );
-
-
-        // ====================================
-        // INVALIDATE CODE
-        // ====================================
-
-        user.resetCodeHash =
-            null;
-
-
-        user.resetCodeExpires =
-            null;
-
-
-        user.resetCodeAttempts =
-            0;
-
-
-        await user.save();
-
-
-        res.json({
-
+        return res.status(500).json({
             message:
-                "Code verified successfully.",
-
-            resetToken:
-                resetToken
-
+                "Unable to process password reset request."
         });
 
-
-    } catch (error) {
-
-        console.error(
-            "Verify code error:",
-            error
-        );
-
-
-        res
-            .status(500)
-            .json({
-
-                message:
-                    "Unable to verify verification code."
-
-                });
-
     }
-
 }
-
 
 
 // ========================================
@@ -1128,22 +829,22 @@ async function resetPassword(
         const {
             resetToken,
             password
-        } = req.body;
+        } = req.body || {};
 
+
+        // ====================================
+        // CHECK REQUIRED DATA
+        // ====================================
 
         if (
             !resetToken ||
             !password
         ) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Reset information is incomplete."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Reset information is incomplete."
+            });
 
         }
 
@@ -1153,17 +854,13 @@ async function resetPassword(
         // ====================================
 
         if (
-            password.length < 6
+            String(password).length < 6
         ) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Password must be at least 6 characters."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Password must be at least 6 characters."
+            });
 
         }
 
@@ -1174,12 +871,12 @@ async function resetPassword(
 
         const tokenHash =
             hashValue(
-                resetToken
+                String(resetToken)
             );
 
 
         // ====================================
-        // FIND VALID RESET SESSION
+        // FIND VALID TOKEN
         // ====================================
 
         const user =
@@ -1199,36 +896,31 @@ async function resetPassword(
 
         if (!user) {
 
-            return res
-                .status(400)
-                .json({
-
-                    message:
-                        "Reset session is invalid or expired."
-
-                });
+            return res.status(400).json({
+                message:
+                    "Password reset link is invalid or expired."
+            });
 
         }
 
 
         // ====================================
-        // HASH NEW PASSWORD
+        // CHANGE PASSWORD
         // ====================================
 
         user.password =
             await bcrypt.hash(
-                password,
+                String(password),
                 10
             );
 
 
         // ====================================
-        // DELETE RESET TOKEN
+        // INVALIDATE RESET TOKEN
         // ====================================
 
         user.resetTokenHash =
             null;
-
 
         user.resetTokenExpires =
             null;
@@ -1237,11 +929,9 @@ async function resetPassword(
         await user.save();
 
 
-        res.json({
-
+        return res.json({
             message:
                 "Password changed successfully."
-
         });
 
 
@@ -1253,26 +943,21 @@ async function resetPassword(
         );
 
 
-        res
-            .status(500)
-            .json({
-
-                message:
-                    "Unable to change password."
-
-                });
+        return res.status(500).json({
+            message:
+                "Unable to change password."
+        });
 
     }
-
 }
-
 
 
 // ========================================
 // ROUTES
 // ========================================
 
-// Registration
+
+// REGISTER
 
 app.post(
     "/register",
@@ -1285,7 +970,7 @@ app.post(
 );
 
 
-// Login
+// LOGIN
 
 app.post(
     "/login",
@@ -1298,7 +983,7 @@ app.post(
 );
 
 
-// Forgot Password
+// FORGOT PASSWORD
 
 app.post(
     "/forgot-password",
@@ -1311,20 +996,7 @@ app.post(
 );
 
 
-// Verify code
-
-app.post(
-    "/verify-reset-code",
-    verifyResetCode
-);
-
-app.post(
-    "/api/verify-reset-code",
-    verifyResetCode
-);
-
-
-// Reset password
+// RESET PASSWORD
 
 app.post(
     "/reset-password",
@@ -1337,34 +1009,38 @@ app.post(
 );
 
 
-
 // ========================================
 // HEALTH CHECK
 // ========================================
 
-app.get("/api/health", async (req, res) => {
-    console.log("Health check requested...");
+app.get(
+    "/api/health",
+    async (req, res) => {
 
-    try {
-        await db();
+        try {
 
-        console.log("MongoDB connection OK!");
+            await db();
 
-        res.json({
-            ok: true
-        });
+            return res.json({
+                ok: true
+            });
 
-    } catch (error) {
-        console.error("Health check error:");
-        console.error(error);
+        } catch (error) {
 
-        res.status(500).json({
-            ok: false,
-            error: error.message
-        });
+            console.error(
+                "Health check error:",
+                error
+            );
+
+            return res.status(500).json({
+                ok: false,
+                error:
+                    error.message
+            });
+
+        }
     }
-});
-
+);
 
 
 // ========================================
@@ -1376,17 +1052,14 @@ app.get(
     (req, res) => {
 
         res.sendFile(
-
             path.join(
                 PUBLIC,
                 "home.html"
             )
-
         );
 
     }
 );
-
 
 
 // ========================================
@@ -1425,7 +1098,6 @@ app.get(
 );
 
 
-
 // ========================================
 // EXPORT
 // ========================================
@@ -1434,15 +1106,18 @@ module.exports =
     app;
 
 
-
 // ========================================
 // LOCAL SERVER
 // ========================================
 
-if (require.main === module) {
+if (
+    require.main === module
+) {
 
     const PORT =
-        process.env.PORT || 3000;
+        process.env.PORT ||
+        3000;
+
 
     db()
         .then(() => {
@@ -1450,22 +1125,35 @@ if (require.main === module) {
             app.listen(
                 PORT,
                 () => {
+
                     console.log(
                         "Running on http://localhost:" +
                         PORT
                     );
+
                 }
             );
 
         })
         .catch(error => {
 
+            console.error("");
+            console.error(
+                "================================"
+            );
             console.error(
                 "MONGODB CONNECTION FAILED"
             );
-
-            console.error(error.message);
+            console.error(
+                "================================"
+            );
+            console.error(
+                error.message
+            );
+            console.error("");
 
             process.exit(1);
+
         });
+
 }
