@@ -33,7 +33,7 @@ const EMAIL_APP_PASSWORD =
 // Do not publish this credential on GitHub.
 
 const MONGO_URI =
-    "YOUR_MONGODB_CONNECTION_STRING";
+    process.env.MONGO_URI;
 
 
 // ========================================
