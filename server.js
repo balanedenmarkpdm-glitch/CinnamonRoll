@@ -554,260 +554,161 @@ async function login(
 }
 
 
-// ========================================
-// FORGOT PASSWORD
-// SEND RESET LINK
-// ========================================
+function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-async function forgotPassword(
-    req,
-    res
-) {
+function hashValue(value) {
+    return crypto
+        .createHash("sha256")
+        .update(value)
+        .digest("hex");
+}
 
+async function forgotPassword(req, res) {
     try {
-
         await db();
 
-
-        const email =
-            String(
-                req.body.email || ""
-            )
-            .trim()
-            .toLowerCase();
-
-
-        // ====================================
-        // REQUIRED EMAIL
-        // ====================================
+        const { email } = req.body;
 
         if (!email) {
-
             return res.status(400).json({
-                message:
-                    "Email is required."
+                ok: false,
+                error: "Email is required."
             });
-
         }
 
+        const user = await User.findOne({
+            email: email.toLowerCase().trim()
+        });
 
-        // ====================================
-        // CHECK GMAIL SETTINGS
-        // ====================================
-
-        if (
-            EMAIL_USER ===
-                "YOUR_GMAIL@gmail.com" ||
-            EMAIL_APP_PASSWORD ===
-                "YOUR_16_CHARACTER_APP_PASSWORD"
-        ) {
-
-            return res.status(500).json({
-                message:
-                    "Please configure your Gmail credentials in server.js."
-            });
-
-        }
-
-
-        // ====================================
-        // FIND USER
-        // ====================================
-
-        const user =
-            await User.findOne({
-                email:
-                    email
-            });
-
-
-        /*
-         * Don't reveal whether the account exists.
-         */
-
+        // Don't reveal whether an account exists
         if (!user) {
-
             return res.json({
-                message:
-                    "If an account with that email exists, a password reset link has been sent."
+                ok: true,
+                message: "If that email is registered, a verification code has been sent."
             });
-
         }
 
+        const code = generateVerificationCode();
 
-        // ====================================
-        // GENERATE RESET TOKEN
-        // ====================================
-
-        const resetToken =
-            generateResetToken();
-
-
-        // ====================================
-        // SAVE ONLY TOKEN HASH
-        // ====================================
-
-        user.resetTokenHash =
-            hashValue(
-                resetToken
-            );
-
-
-        user.resetTokenExpires =
-            new Date(
-                Date.now() +
-                15 * 60 * 1000
-            );
-
+        user.resetCodeHash = hashValue(code);
+        user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+        user.resetCodeAttempts = 0;
 
         await user.save();
 
+        await transporter.sendMail({
+            from: EMAIL_USER,
+            to: user.email,
+            subject: "CinnamonRoll Password Reset Code",
+            text: `Your verification code is: ${code}\n\nThis code expires in 10 minutes.`,
+            html: `
+                <div style="font-family: Arial, sans-serif;">
+                    <h2>CinnamonRoll Password Reset</h2>
 
-        // ====================================
-        // CREATE RESET URL
-        // ====================================
+                    <p>Your verification code is:</p>
 
-        const resetUrl =
-            `${APP_URL}/reset-password.html?token=${encodeURIComponent(resetToken)}`;
+                    <h1 style="letter-spacing: 8px;">
+                        ${code}
+                    </h1>
 
+                    <p>This code expires in 10 minutes.</p>
 
-        // ====================================
-        // SEND EMAIL
-        // ====================================
-
-        try {
-
-            await transporter.sendMail({
-
-                from:
-                    EMAIL_USER,
-
-                to:
-                    user.email,
-
-                subject:
-                    "CINNAMOROLL BAKERY SHOP - Reset Your Password",
-
-                text:
-                    `We received a request to reset your password.
-
-Click the link below to reset your password:
-
-${resetUrl}
-
-This link expires in 15 minutes.
-
-If you did not request a password reset, you can ignore this email.`,
-
-                html: `
-                    <div style="
-                        font-family: Arial, sans-serif;
-                        max-width: 520px;
-                        margin: 20px auto;
-                        padding: 30px;
-                        border: 1px solid #ddd;
-                        border-radius: 12px;
-                        line-height: 1.6;
-                    ">
-
-                        <h2>
-                            CINNAMOROLL BAKERY SHOP
-                        </h2>
-
-                        <p>
-                            We received a request to reset
-                            your password.
-                        </p>
-
-                        <p>
-                            Click the button below to create
-                            a new password.
-                        </p>
-
-                        <div style="
-                            text-align: center;
-                            margin: 30px 0;
-                        ">
-
-                            <a
-                                href="${resetUrl}"
-                                style="
-                                    display: inline-block;
-                                    padding: 12px 24px;
-                                    background: #333;
-                                    color: #fff;
-                                    text-decoration: none;
-                                    border-radius: 8px;
-                                    font-weight: bold;
-                                "
-                            >
-                                Reset Password
-                            </a>
-
-                        </div>
-
-                        <p>
-                            This link expires in
-                            <strong>15 minutes</strong>.
-                        </p>
-
-                        <p>
-                            If you did not request this,
-                            you can ignore this email.
-                        </p>
-
-                    </div>
-                `
-
-            });
-
-
-        } catch (emailError) {
-
-            // Invalidate token if email fails
-
-            user.resetTokenHash =
-                null;
-
-            user.resetTokenExpires =
-                null;
-
-            await user.save();
-
-
-            console.error(
-                "Email sending error:",
-                emailError
-            );
-
-
-            return res.status(500).json({
-                message:
-                    "Unable to send password reset email. Check your Gmail settings."
-            });
-
-        }
-
-
-        return res.json({
-            message:
-                "Password reset link has been sent to your email."
+                    <p>If you did not request a password reset, you can ignore this email.</p>
+                </div>
+            `
         });
 
+        console.log("Reset code sent to:", user.email);
+
+        res.json({
+            ok: true,
+            message: "A verification code has been sent to your email."
+        });
 
     } catch (error) {
+        console.error("Forgot password error:", error);
 
-        console.error(
-            "Forgot password error:",
-            error
-        );
+        res.status(500).json({
+            ok: false,
+            error: "Failed to send verification code."
+        });
+    }
+}
 
+async function verifyResetCode(req, res) {
+    try {
+        await db();
 
-        return res.status(500).json({
-            message:
-                "Unable to process password reset request."
+        const { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({
+                ok: false,
+                error: "Email and verification code are required."
+            });
+        }
+
+        const user = await User.findOne({
+            email: email.toLowerCase().trim()
         });
 
+        if (!user) {
+            return res.status(400).json({
+                ok: false,
+                error: "Invalid verification code."
+            });
+        }
+
+        if (
+            !user.resetCodeHash ||
+            !user.resetCodeExpires ||
+            user.resetCodeExpires < new Date()
+        ) {
+            return res.status(400).json({
+                ok: false,
+                error: "Verification code has expired."
+            });
+        }
+
+        const codeHash = hashValue(code);
+
+        if (codeHash !== user.resetCodeHash) {
+            user.resetCodeAttempts = (user.resetCodeAttempts || 0) + 1;
+            await user.save();
+
+            return res.status(400).json({
+                ok: false,
+                error: "Invalid verification code."
+            });
+        }
+
+        // Create a temporary reset token after successful verification
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        user.resetTokenHash = hashValue(resetToken);
+        user.resetTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+        user.resetCodeHash = undefined;
+        user.resetCodeExpires = undefined;
+        user.resetCodeAttempts = 0;
+
+        await user.save();
+
+        res.json({
+            ok: true,
+            message: "Code verified.",
+            resetToken
+        });
+
+    } catch (error) {
+        console.error("Verify code error:", error);
+
+        res.status(500).json({
+            ok: false,
+            error: "Failed to verify code."
+        });
     }
 }
 
