@@ -14,7 +14,7 @@ if (
 ) {
 
     const registerForm =
-        document.querySelector("form");
+    document.getElementById("registerForm");
 
 
     if (registerForm) {
@@ -207,29 +207,246 @@ if (
     document.title.trim() === "Login"
 ) {
 
-
     const loginForm =
-        document.querySelector("form");
-
+        document.getElementById("loginForm");
 
     const usernameInput =
-        document.getElementById(
-            "itxtbox"
-        );
-
+        document.getElementById("itxtbox");
 
     const passwordInput =
-        document.getElementById(
-            "ipassbox"
-        );
-
-
-    // Your existing checkbox ID
+        document.getElementById("ipassbox");
 
     const rememberMe =
-        document.getElementById(
-            "chkb2"
+        document.getElementById("chkb2");
+
+
+    // ====================================
+    // LOAD REMEMBERED LOGIN
+    // ====================================
+
+    const savedCredentials =
+        localStorage.getItem(
+            "cinnamorollRememberMe"
         );
+
+
+    if (savedCredentials) {
+
+        try {
+
+            const credentials =
+                JSON.parse(
+                    savedCredentials
+                );
+
+
+            usernameInput.value =
+                credentials.username || "";
+
+
+            passwordInput.value =
+                credentials.password || "";
+
+
+            if (rememberMe) {
+
+                rememberMe.checked =
+                    true;
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Could not load remembered login:",
+                error
+            );
+
+            localStorage.removeItem(
+                "cinnamorollRememberMe"
+            );
+
+        }
+
+    }
+
+
+    // ====================================
+    // REMOVE SAVED LOGIN WHEN UNCHECKED
+    // ====================================
+
+    if (rememberMe) {
+
+        rememberMe.addEventListener(
+            "change",
+            function () {
+
+                if (!rememberMe.checked) {
+
+                    localStorage.removeItem(
+                        "cinnamorollRememberMe"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // ====================================
+    // LOGIN FORM
+    // ====================================
+
+    if (loginForm) {
+
+        loginForm.addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+
+                const username =
+                    usernameInput.value.trim();
+
+
+                const password =
+                    passwordInput.value;
+
+
+                // Check empty fields
+
+                if (
+                    username === "" ||
+                    password === ""
+                ) {
+
+                    alert(
+                        "Please enter your username and password."
+                    );
+
+                    return;
+
+                }
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/login",
+                            {
+
+                                method: "POST",
+
+                                headers: {
+
+                                    "Content-Type":
+                                        "application/json"
+
+                                },
+
+                                body:
+                                    JSON.stringify({
+
+                                        username:
+                                            username,
+
+                                        password:
+                                            password
+
+                                    })
+
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (response.ok) {
+
+                        // =================================
+                        // SAVE LOGIN
+                        // =================================
+
+                        if (
+                            rememberMe &&
+                            rememberMe.checked
+                        ) {
+
+                            localStorage.setItem(
+
+                                "cinnamorollRememberMe",
+
+                                JSON.stringify({
+
+                                    username:
+                                        username,
+
+                                    password:
+                                        password
+
+                                })
+
+                            );
+
+                        } else {
+
+                            localStorage.removeItem(
+                                "cinnamorollRememberMe"
+                            );
+
+                        }
+
+
+                        alert(
+                            "Login successful!"
+                        );
+
+
+                        window.location.href =
+                            "home.html";
+
+
+                    } else {
+
+                        alert(
+
+                            data.message ||
+                            "Invalid username or password."
+
+                        );
+
+                    }
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Login error:",
+                        error
+                    );
+
+
+                    alert(
+                        "Cannot connect to the server."
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+}
+
+
+   
 
 
     // ====================================

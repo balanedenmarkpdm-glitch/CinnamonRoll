@@ -25,15 +25,17 @@ const EMAIL_APP_PASSWORD =
 
 
 // ========================================
+
+
+// ========================================
 // MONGODB
 // ========================================
 
-// Put your MongoDB connection string here.
-// Use your current/new connection string.
-// Do not publish this credential on GitHub.
+const MONGO_USER = "balanedenmarkpdm_db_user";
+const MONGO_PASSWORD = "balane440";
 
 const MONGO_URI =
-    "mongodb+srv://balanedenmarkpdm_db_user:balane440@YOUR_CLUSTER.mongodb.net/CinnamonRoll?retryWrites=true&w=majority";
+    `mongodb+srv://${encodeURIComponent(MONGO_USER)}:${encodeURIComponent(MONGO_PASSWORD)}@cluster0.ybe0qzn.mongodb.net/CinnamonRoll?retryWrites=true&w=majority&appName=Cluster0`;
 
 
 // ========================================
@@ -81,55 +83,25 @@ app.use(
 // MONGODB CONNECTION
 // ========================================
 
-let cachedConnection =
-    null;
-
-
 async function db() {
+    try {
+        if (mongoose.connection.readyState === 1) {
+            return;
+        }
 
-    if (
-        mongoose.connection.readyState === 1
-    ) {
+        console.log("Connecting to MongoDB...");
 
-        return;
+        await mongoose.connect(MONGO_URI, {
+            serverSelectionTimeoutMS: 8000
+        });
 
+        console.log("MongoDB connected successfully!");
+    } catch (error) {
+        console.error("========== MONGODB ERROR ==========");
+        console.error(error.message);
+        console.error("===================================");
+        throw error;
     }
-
-
-    if (!MONGO_URI) {
-
-        throw new Error(
-            "MongoDB connection string is missing."
-        );
-
-    }
-
-
-    if (!cachedConnection) {
-
-        cachedConnection =
-            mongoose
-                .connect(
-                    MONGO_URI,
-                    {
-                        serverSelectionTimeoutMS:
-                            8000
-                    }
-                )
-                .catch(error => {
-
-                    cachedConnection =
-                        null;
-
-                    throw error;
-
-                });
-
-    }
-
-
-    await cachedConnection;
-
 }
 
 
@@ -486,11 +458,8 @@ async function register(
 
     } catch (error) {
 
-        console.error(
-            "Registration error:",
-            error
-        );
-
+console.error("Registration error:");
+console.error(error);
 
         res
             .status(500)
@@ -1373,45 +1342,28 @@ app.post(
 // HEALTH CHECK
 // ========================================
 
-app.get(
-    "/api/health",
-    async (req, res) => {
+app.get("/api/health", async (req, res) => {
+    console.log("Health check requested...");
 
-        try {
+    try {
+        await db();
 
-            await db();
+        console.log("MongoDB connection OK!");
 
+        res.json({
+            ok: true
+        });
 
-            res.json({
+    } catch (error) {
+        console.error("Health check error:");
+        console.error(error);
 
-                ok: true
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "Health check error:",
-                error
-            );
-
-
-            res
-                .status(500)
-                .json({
-
-                    ok: false,
-
-                    error:
-                        "Database connection failed."
-
-                });
-
-        }
-
+        res.status(500).json({
+            ok: false,
+            error: error.message
+        });
     }
-);
+});
 
 
 
@@ -1487,25 +1439,34 @@ module.exports =
 // LOCAL SERVER
 // ========================================
 
-if (
-    require.main === module
-) {
+if (require.main === module) {
 
     const PORT =
-        process.env.PORT ||
-        3000;
+        process.env.PORT || 3000;
 
+    db()
+        .then(() => {
 
-    app.listen(
-        PORT,
-        () => {
-
-            console.log(
-                "Running on http://localhost:" +
-                PORT
+            app.listen(
+                PORT,
+                () => {
+                    console.log(
+                        "Running on http://localhost:" +
+                        PORT
+                    );
+                }
             );
 
-        }
-    );
+        })
+        .catch(error => {
 
+            console.error("");
+            console.error("================================");
+            console.error("MONGODB CONNECTION FAILED");
+            console.error("================================");
+            console.error(error.message);
+            console.error("");
+
+            process.exit(1);
+        });
 }
